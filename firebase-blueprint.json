@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Core user authentication and basic info",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User health profile and goals",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "weightKg": { "type": "number" },
+        "heightCm": { "type": "number" },
+        "activityLevel": { "type": "string", "enum": ["sedentary", "light", "moderate", "active", "very_active"] },
+        "goalType": { "type": "string", "enum": ["lose_weight", "maintain", "gain_muscle"] },
+        "healthConditions": { "type": "array", "items": { "type": "string" } },
+        "allergies": { "type": "array", "items": { "type": "string" } },
+        "dietaryPreference": { "type": "string" },
+        "dailyCalorieGoal": { "type": "number" },
+        "dailyProteinGoal": { "type": "number" },
+        "dailyCarbGoal": { "type": "number" },
+        "dailyFatGoal": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Health product details and nutritional data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "imageURL": { "type": "string" },
+        "price": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "isFdaApproved": { "type": "boolean" },
+        "isFssaiApproved": { "type": "boolean" },
+        "ingredientsText": { "type": "string" },
+        "nutritionFacts": {
+          "type": "object",
+          "properties": {
+            "servingSize": { "type": "string" },
+            "calories": { "type": "number" },
+            "protein": { "type": "number" },
+            "carbohydrates": { "type": "number" },
+            "sugar": { "type": "number" },
+            "fat": { "type": "number" },
+            "saturatedFat": { "type": "number" },
+            "transFat": { "type": "number" },
+            "sodium": { "type": "number" },
+            "fiber": { "type": "number" },
+            "vitamins": { "type": "string" }
+          }
+        },
+        "healthScore": { "type": "number" },
+        "healthCategory": { "type": "string", "enum": ["Healthy", "Moderate", "Caution Required"] },
+        "healthBadges": { "type": "array", "items": { "type": "string" } },
+        "scoreExplanation": {
+          "type": "object",
+          "properties": {
+            "positives": { "type": "array", "items": { "type": "string" } },
+            "negatives": { "type": "array", "items": { "type": "string" } },
+            "summary": { "type": "string" }
+          }
+        },
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "delivered", "cancelled"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed"] },
+        "paymentMethod": { "type": "string", "enum": ["cod", "upi", "card"] },
+        "shippingAddress": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FoodLog": {
+      "title": "FoodLog",
+      "description": "Daily nutrition tracking entries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "mealType": { "type": "string", "enum": ["Breakfast", "Lunch", "Dinner", "Snack"] },
+        "foodName": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "loggedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ChatSession": {
+      "title": "ChatSession",
+      "description": "AI chatbot conversation history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "messages": { "type": "array", "items": { "type": "object" } },
+        "intent": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account information"
+    },
+    "/userProfiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "Personal health profile linked to user"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Available products in the store"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer purchase records"
+    },
+    "/foodLogs/{logId}": {
+      "schema": "FoodLog",
+      "description": "Nutrition entries logged by users"
+    },
+    "/chatSessions/{sessionId}": {
+      "schema": "ChatSession",
+      "description": "Stored AI chat history"
+    }
+  }
+}

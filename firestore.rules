@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- PHASE 3: Primitive Definitions ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    // Bootstrapped Admin: Email from runtime metadata
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'venkatasaiaravinds@gmail.com' || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // --- PHASE 4: Drafting the "Fortress" Rules ---
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin()) && 
+                    incoming().uid == userId && 
+                    incoming().role in ['user', 'admin'] &&
+                    incoming().email is string && incoming().email.size() <= 100;
+      allow update: if isValidId(userId) && isOwner(userId) && 
+                    incoming().uid == existing().uid &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin', 'updatedAt']);
+    }
+
+    // 2. User Profiles (PII Isolation Strategy)
+    function isValidUserProfile(data) {
+      return data.uid == request.auth.uid &&
+             data.keys().hasAll(['uid', 'age', 'weightKg', 'heightCm', 'dailyCalorieGoal']);
+    }
+
+    match /userProfiles/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+    }
+
+    // 3. Products (Public Catalog)
+    match /products/{productId} {
+      allow get: if isValidId(productId);
+      allow list: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Cart (Owner-only state)
+    match /cart/{userId} {
+      allow read, write: if isOwner(userId) && isValidId(userId);
+    }
+
+    // 5. Orders (Relational Sync)
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
+                    incoming().items is list && incoming().items.size() > 0;
+      allow update: if isAdmin();
+    }
+
+    // 6. Food Logs (Metabolic Documentation)
+    match /foodLogs/{logId} {
+      allow get: if isValidId(logId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
+                    incoming().calories is number && incoming().loggedAt is timestamp;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // 7. Chat Sessions (Neural Research)
+    match /chatSessions/{sessionId} {
+      allow get: if isValidId(sessionId) && isOwner(resource.data.userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow write: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // 8. Analytics (System Integrity)
+    match /analytics/{eventId} {
+      allow create: if isSignedIn();
+      allow list: if isAdmin();
+    }
+  }
+}
